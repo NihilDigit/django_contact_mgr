@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}黑名单{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .avatar-icon {
+        font-size: 40px;
+        color: #6c757d;
+    }
+    .search-form {
+        margin-bottom: 20px;
+    }
+    .table td, .table th {
+        vertical-align: middle;
+        text-align: center;
+    }
+    .table td:last-child {
+        text-align: center;
+    }
+    .action-buttons .btn {
+        margin: 2px;
+    }
+    .empty-list {
+        text-align: center;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">
+        <i class="bi bi-person-x-fill me-2"></i>黑名单
+    </h2>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'contacts:contact_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-2"></i>返回联系人列表
+        </a>
+    </div>
+
+    <form method="get" action="{% url 'contacts:blacklist' %}" class="search-form">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="query" placeholder="搜索姓名或电话" value="{{ query|default:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+                <i class="bi bi-search"></i> 搜索
+            </button>
+        </div>
+    </form>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if page_obj %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>头像</th>
+                    <th>姓名</th>
+                    <th>电话</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in page_obj %}
+                    <tr>
+                        <td>
+                            {% if contact.avatar %}
+                                <img src="{{ contact.avatar.url }}" alt="{{ contact.ct_name }}的头像" class="avatar">
+                            {% else %}
+                                <i class="bi bi-person-circle avatar-icon"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ contact.ct_name }}</td>
+                        <td>{{ contact.ct_phone }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <form method="post" action="{% url 'contacts:unblock_contact' ct_id=contact.ct_id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('确定要将此联系人从黑名单中移除吗？');">
+                                        <i class="bi bi-person-check"></i> 解除拉黑
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'contacts:delete_contact' ct_id=contact.ct_id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除此联系人吗？此操作不可撤销。');">
+                                        <i class="bi bi-trash"></i> 删除
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link" aria-hidden="true">&laquo;</span>
+                        </li>
+                    {% endif %}
+
+                    {% for i in page_obj.paginator.page_range %}
+                        {% if page_obj.number == i %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if query %}&query={{ query }}{% endif %}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link" aria-hidden="true">&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-list">
+            <p class="lead">黑名单中没有联系人。</p>
+            <p>所有联系人都处于正常状态。</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ contact.ct_name }} - 联系人详情{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contact-header {
+        background-color: #f8f9fa;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .contact-avatar {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin-right: 20px;
+    }
+    .contact-name {
+        font-size: 2.5rem;
+        margin-bottom: 0;
+    }
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: none;
+        margin-bottom: 20px;
+    }
+    .card-title {
+        color: #007bff;
+        font-weight: bold;
+    }
+    .todo-list .list-group-item {
+        border-left: 5px solid #007bff;
+    }
+    .todo-list .list-group-item.completed {
+        border-left-color: #28a745;
+    }
+    .btn-action {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contact-header">
+    <div class="container">
+        <div class="d-flex align-items-center">
+            {% if contact.avatar %}
+                <img src="{{ contact.avatar.url }}" alt="{{ contact.ct_name }}" class="contact-avatar">
+            {% else %}
+                <div class="contact-avatar bg-primary text-white d-flex justify-content-center align-items-center">
+                    <i class="bi bi-person-fill" style="font-size: 3rem;"></i>
+                </div>
+            {% endif %}
+            <h1 class="contact-name">{{ contact.ct_name }}</h1>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">联系人信息</h5>
+                    <p><i class="bi bi-telephone-fill me-2"></i>{{ contact.ct_phone }}</p>
+                    <p><i class="bi bi-envelope-fill me-2"></i>{{ contact.ct_email|default:"未设置" }}</p>
+                    <p><i class="bi bi-geo-alt-fill me-2"></i>{{ contact.ct_address|default:"未设置" }}</p>
+                    <p><i class="bi bi-calendar-event-fill me-2"></i>{{ contact.ct_birthday|date:"Y-m-d"|default:"未设置" }}</p>
+                    <p><i class="bi bi-chat-left-text-fill me-2"></i>{{ contact.ct_notes|default:"无" }}</p>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>待办事项</h3>
+                <a href="{% url 'contacts:add_todo' ct_id=contact.ct_id %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 添加待办
+                </a>
+            </div>
+
+            {% if contact.todos.all %}
+                <div class="todo-list">
+                    <ul class="list-group mb-4">
+                    {% for todo in contact.todos.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center {% if todo.completed %}completed{% endif %}">
+                            <span>
+                                {% if todo.completed %}
+                                    <s>{{ todo.event }} - {{ todo.time|date:"Y-m-d H:i" }}</s>
+                                {% else %}
+                                    {{ todo.event }} - {{ todo.time|date:"Y-m-d H:i" }}
+                                {% endif %}
+                            </span>
+                            <div>
+                                <form method="post" action="{% url 'contacts:toggle_todo' ct_id=contact.ct_id todo_id=todo.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm {% if todo.completed %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                                        {% if todo.completed %}<i class="bi bi-x-circle"></i>{% else %}<i class="bi bi-check-circle"></i>{% endif %}
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'contacts:delete_todo' ct_id=contact.ct_id todo_id=todo.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这个待办事项吗？');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <p class="text-muted">没有待办事项。</p>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">操作</h5>
+                    <a href="{% url 'contacts:edit_contact' ct_id=contact.ct_id %}" class="btn btn-primary btn-action">
+                        <i class="bi bi-pencil-square"></i> 编辑联系人
+                    </a>
+                    <form method="post" action="{% url 'contacts:delete_contact' ct_id=contact.ct_id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-action" onclick="return confirm('确定要删除这个联系人吗？此操作不可撤销。');">
+                            <i class="bi bi-trash"></i> 删除联系人
+                        </button>
+                    </form>
+                    {% if contact.is_blacklisted %}
+                        <form method="post" action="{% url 'contacts:unblock_contact' ct_id=contact.ct_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-action">
+                                <i class="bi bi-person-check-fill"></i> 取消拉黑
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'contacts:block_contact' ct_id=contact.ct_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-dark btn-action">
+                                <i class="bi bi-person-x-fill"></i> 拉黑联系人
+                            </button>
+                        </form>
+                    {% endif %}
+                    <a href="{% url 'contacts:contact_list' %}" class="btn btn-secondary btn-action">
+                        <i class="bi bi-arrow-left"></i> 回到联系人列表
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

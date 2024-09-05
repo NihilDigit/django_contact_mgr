@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}联系人列表{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .avatar-icon {
+        font-size: 40px;
+        color: #6c757d;
+    }
+    .search-form {
+        margin-bottom: 20px;
+    }
+    .weather-info {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    .weather-day {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    .weather-icon {
+        width: 30px;
+        height: 30px;
+    }
+    #city-name {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .contact-list {
+        list-style: none;
+        padding: 0;
+    }
+    .contact-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .contact-info {
+        flex-grow: 1;
+        margin-left: 10px;
+    }
+    .contact-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .contact-actions .btn {
+        margin: 2px;
+    }
+    @media (max-width: 768px) {
+        .contact-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .contact-info {
+            margin-left: 0;
+            margin-top: 10px;
+        }
+        .contact-actions {
+            width: 100%;
+            justify-content: flex-start;
+            margin-top: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-person-lines-fill me-2"></i>联系人列表
+        </h2>
+        <form method="post" action="{% url 'contacts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right me-2"></i>登出
+            </button>
+        </form>
+    </div>
+
+    <div class="weather-info">
+        <h5><i class="bi bi-cloud-sun me-2"></i>未来三天天气预报</h5>
+        <div id="city-name"></div>
+        <div id="weather-data">加载中...</div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div class="mb-2">
+            <a href="{% url 'contacts:add_contact' %}" class="btn btn-primary me-2 mb-2">
+                <i class="bi bi-person-plus-fill me-2"></i>添加联系人
+            </a>
+            <a href="{% url 'contacts:all_todos' %}" class="btn btn-info me-2 mb-2">
+                <i class="bi bi-list-task me-2"></i>所有待办事项
+            </a>
+        </div>
+        <a href="{% url 'contacts:blacklist' %}" class="btn btn-secondary mb-2">
+            <i class="bi bi-person-x-fill me-2"></i>查看黑名单
+        </a>
+    </div>
+
+    <form method="get" action="{% url 'contacts:contact_list' %}" class="search-form">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="query" placeholder="搜索联系人..." value="{{ query|default:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+                <i class="bi bi-search"></i> 搜索
+            </button>
+        </div>
+    </form>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if page_obj %}
+        <ul class="contact-list">
+            {% for contact in page_obj %}
+                <li class="contact-item">
+                    {% if contact.avatar %}
+                        <img src="{{ contact.avatar.url }}" alt="{{ contact.ct_name }}的头像" class="avatar">
+                    {% else %}
+                        <i class="bi bi-person-circle avatar-icon"></i>
+                    {% endif %}
+                    <div class="contact-info">
+                        <h5>{{ contact.ct_name }}</h5>
+                        <p>{{ contact.ct_phone }}</p>
+                    </div>
+                    <div class="contact-actions">
+                        <a href="{% url 'contacts:contact_detail' ct_id=contact.ct_id %}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i> 详情
+                        </a>
+                        <a href="{% url 'contacts:edit_contact' ct_id=contact.ct_id %}" class="btn btn-sm btn-warning">
+                            <i class="bi bi-pencil"></i> 编辑
+                        </a>
+                        <form method="post" action="{% url 'contacts:block_contact' ct_id=contact.ct_id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要将此联系人加入黑名单吗？');">
+                                <i class="bi bi-person-x"></i> 拉黑
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'contacts:delete_contact' ct_id=contact.ct_id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除此联系人吗？此操作不可撤销。');">
+                                <i class="bi bi-trash"></i> 删除
+                            </button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query %}&query={{ query }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&query={{ query }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <p>没有找到联系人。</p>
+    {% endif %}
+</div>
+
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showWeather, showError);
+    } else {
+        alert("浏览器不支持地理定位。");
+    }
+}
+
+function showWeather(position) {
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+    const apiKey = '1afc90f1616a5e5d3a58a0522d4ee1f4'; // 请替换为您的实际API密钥
+
+    // 使用经纬度获取城市名称
+    fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${apiKey}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                const cityName = data[0].name;
+                document.getElementById('city-name').textContent = `${cityName}`;
+
+                // 获取天气数据
+                return fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric&lang=zh_cn`);
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const weatherData = document.getElementById('weather-data');
+            weatherData.innerHTML = '';
+
+            // 获取未来三天的天气数据
+            const threeDaysForecast = data.list.filter((item, index) => index % 8 === 0).slice(0, 3);
+
+            threeDaysForecast.forEach(day => {
+                const date = new Date(day.dt * 1000);
+                const dayName = date.toLocaleDateString('zh-CN', { weekday: 'short' });
+                const temp = Math.round(day.main.temp);
+                const description = day.weather[0].description;
+                const iconCode = day.weather[0].icon;
+
+                const weatherDay = document.createElement('div');
+                weatherDay.className = 'weather-day';
+                weatherDay.innerHTML = `
+                    <span>${dayName}</span>
+                    <img src="http://openweathermap.org/img/wn/${iconCode}.png" alt="${description}" class="weather-icon">
+                    <span>${temp}°C</span>
+                    <span>${description}</span>
+                `;
+                weatherData.appendChild(weatherDay);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('weather-data').textContent = '无法获取天气数据';
+        });
+}
+
+function showError(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            alert("用户拒绝了地理定位请求。");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert("位置信息不可用。");
+            break;
+        case error.TIMEOUT:
+            alert("请求用户地理位置超时。");
+            break;
+        case error.UNKNOWN_ERROR:
+            alert("发生未知错误。");
+            break;
+    }
+}
+
+// 页面加载完成后获取位置信息
+window.addEventListener('load', getLocation);
+</script>
+{% endblock %}

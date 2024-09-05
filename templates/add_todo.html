@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}添加待办事项{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">为 {{ contact.ct_name }} 添加待办事项</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">添加待办事项</button>
+        <a href="{% url 'contacts:contact_detail' ct_id=contact.ct_id %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}
