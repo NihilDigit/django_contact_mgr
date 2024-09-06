@@ -41,6 +41,14 @@
         width: 100%;
         margin-bottom: 10px;
     }
+    .blocked-badge {
+        background-color: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+    }
 </style>
 {% endblock %}
 
@@ -55,7 +63,21 @@
                     <i class="bi bi-person-fill" style="font-size: 3rem;"></i>
                 </div>
             {% endif %}
-            <h1 class="contact-name">{{ contact.ct_name }}</h1>
+            <div>
+                <h1 class="contact-name">
+                    {{ contact.ct_name }}
+                    {% if contact.is_blocked %}
+                        <span class="blocked-badge">已拉黑</span>
+                    {% endif %}
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if contact.gender %}
+                        {% if contact.gender == 'M' %}男{% else %}女{% endif %}
+                    {% else %}
+                        性别未设置
+                    {% endif %}
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -67,10 +89,16 @@
                 <div class="card-body">
                     <h5 class="card-title">联系人信息</h5>
                     <p><i class="bi bi-telephone-fill me-2"></i>{{ contact.ct_phone }}</p>
-                    <p><i class="bi bi-envelope-fill me-2"></i>{{ contact.ct_email|default:"未设置" }}</p>
-                    <p><i class="bi bi-geo-alt-fill me-2"></i>{{ contact.ct_address|default:"未设置" }}</p>
-                    <p><i class="bi bi-calendar-event-fill me-2"></i>{{ contact.ct_birthday|date:"Y-m-d"|default:"未设置" }}</p>
-                    <p><i class="bi bi-chat-left-text-fill me-2"></i>{{ contact.ct_notes|default:"无" }}</p>
+                    <p><i class="bi bi-envelope-fill me-2"></i>{{ contact.email|default:"未设置" }}</p>
+                    <p><i class="bi bi-geo-alt-fill me-2"></i>{{ contact.address|default:"未设置" }}</p>
+                    <p><i class="bi bi-calendar-event-fill me-2"></i>{{ contact.birthday|date:"Y-m-d"|default:"未设置" }}</p>
+                    <p><i class="bi bi-gender-ambiguous me-2"></i>
+                        {% if contact.gender %}
+                            {% if contact.gender == 'M' %}男{% else %}女{% endif %}
+                        {% else %}
+                            未设置
+                        {% endif %}
+                    </p>
                 </div>
             </div>
 
@@ -129,7 +157,7 @@
                             <i class="bi bi-trash"></i> 删除联系人
                         </button>
                     </form>
-                    {% if contact.is_blacklisted %}
+                    {% if contact.is_blocked %}
                         <form method="post" action="{% url 'contacts:unblock_contact' ct_id=contact.ct_id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-warning btn-action">

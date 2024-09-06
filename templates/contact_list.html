@@ -224,7 +224,7 @@ function getLocation() {
 function showWeather(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-    const apiKey = '1afc90f1616a5e5d3a58a0522d4ee1f4'; // 请替换为您的实际API密钥
+    const apiKey = '1afc90f1616a5e5d3a58a0522d4ee1f4';
 
     // 使用经纬度获取城市名称
     fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${apiKey}`)
@@ -287,7 +287,6 @@ function showError(error) {
     }
 }
 
-// 页面加载完成后获取位置信息
 window.addEventListener('load', getLocation);
 </script>
 {% endblock %}

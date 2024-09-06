@@ -86,29 +86,16 @@ def register_view(request):
     return render(request, 'register.html')
 
 
-def contact_list_view(request):
-    print("Entering contact_list_view")
+def contact_list(request):
     contacts = Contact.objects.filter(user=request.user, is_blocked=False)
-    print(f"Total contacts: {contacts.count()}")
-
-    for contact in contacts:
-        print(f"Contact ID: {contact.ct_id}, Name: {contact.ct_name}")
 
     query = request.GET.get('search')
     if query:
         contacts = contacts.filter(ct_name__icontains=query)
-        print(f"Filtered contacts count: {contacts.count()}")
 
-    paginator = Paginator(contacts, 10)  # Show 10 contacts per page
+    paginator = Paginator(contacts, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    print(f"Page number: {page_number}")
-    print(f"Total pages: {paginator.num_pages}")
-    print(f"Items on current page: {len(page_obj)}")
-
-    for item in page_obj:
-        print(f"Item on page - ID: {item.ct_id}, Name: {item.ct_name}")
 
     context = {
         'page_obj': page_obj,

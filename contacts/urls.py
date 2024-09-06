@@ -10,7 +10,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
 
     # 主要列表视图
-    path('', views.contact_list_view, name='contact_list'),
+    path('', views.contact_list, name='contact_list'),
     path('blacklist/', views.blacklist_view, name='blacklist'),
     path('all_todos/', views.all_todos, name='all_todos'),
 
